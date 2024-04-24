@@ -1,14 +1,13 @@
 "use client";
 
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useMemo, useRef} from "react";
 import Link from "next/link";
 import {DataConnection, Peer} from "peerjs";
 
 export default function Normal() {
-    const [connection, setConnection] = useState<DataConnection>();
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    function handleOnRecord() {
+    const handleTranscription = useMemo(() => (connection: DataConnection) => {
         // @ts-ignore
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
@@ -17,14 +16,12 @@ export default function Normal() {
 
         recognition.onresult = async function(event: { results: { transcript: any; }[][]; }) {
             const transcript = event.results[event.results.length-1][0].transcript;
-            console.log(transcript);
-            if (connection) {
-                connection.send(transcript);
-            }
+            console.log(transcript, connection);
+            connection.send(transcript);
         }
 
         recognition.start();
-    }
+    }, []);
 
     useEffect(() => {
         const peer = new Peer("123", {
@@ -42,16 +39,19 @@ export default function Normal() {
                             videoRef.current.srcObject = remoteStream;
                         }
                     });
+                    call.on("close", () => {
+                        stream.getTracks().forEach(track => track.stop());
+                    });
                 });
 
             const connection = peer.connect("321");
-            setConnection(connection);
+            connection.on("open", () => handleTranscription(connection));
         });
 
         return () => {
             peer.destroy();
         }
-    }, [videoRef]);
+    }, [handleTranscription, videoRef]);
 
     return (
         <div>

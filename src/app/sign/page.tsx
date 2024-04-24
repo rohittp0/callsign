@@ -31,6 +31,7 @@ export default function Sign() {
                 });
                 call.on("close", () => {
                     setStarted(false);
+                    stream.getTracks().forEach(track => track.stop());
                 });
                 call.on("error", console.log);
             });
@@ -50,11 +51,11 @@ export default function Sign() {
     }
 
     return (
-        <div>
+        <div className="">
             {!started && <button onClick={startCall}>Start Call</button>}
             <video ref={videoRef} autoPlay playsInline/>
             <ActionModel text={text} pause={400} speed={0.3} />
-            <p>{text}</p>
+            <p>Transcription: {text}</p>
             <br />
             <Link href="/">End Call</Link>
         </div>
